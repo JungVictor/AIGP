@@ -38,7 +38,7 @@ int evaluation(Position* pos_current, bool computer_play, int depth) {
 
 //Return 1 if we can play the case i, 0 otherwise
 bool validMove(Position* pos_current, bool computer_play, int i) {
-	if (i < 0 || i > NUMBER_OF_CELLS) return false;
+	if (i < 0 || i >= NUMBER_OF_CELLS) return false;
 	if (computer_play) return pos_current->cells_computer[i] > 0;
 	return pos_current->cells_player[i] > 0;
 }
@@ -69,9 +69,13 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	int index = i;
 	for (int seed = 0; seed < seeds; seed++) {
 		index = (index + 1) % NUMBER_OF_CELLS;
-		if(computer_side == computer_play && index == i) index = (index + 1) % NUMBER_OF_CELLS;
 		//change the side if we reach the end of one side
 		if (index == 0) computer_side = !computer_side;
+		if (computer_side == computer_play && index == i) {
+			index = (index + 1) % NUMBER_OF_CELLS;
+			if (index == 0) computer_side = !computer_side;
+		}
+
 		if (computer_side) pos_next->cells_computer[index] += 1;
 		else pos_next->cells_player[index] += 1;
 	}
@@ -237,5 +241,4 @@ int main() {
 	print_position(&position);
 	std::cout << cpt << std::endl;
 	system("PAUSE");
-
 }
