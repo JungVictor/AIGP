@@ -1,6 +1,7 @@
 // AIGP.cpp : Ce fichier contient la fonction 'main'. L'exécution du programme commence et se termine à cet endroit.
 //
 
+#include "pch.h"
 #include <iostream>
 #define NUMBER_OF_CELLS 6
 #define MAX_DEPTH 10
