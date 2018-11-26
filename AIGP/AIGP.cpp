@@ -13,9 +13,11 @@ c = 2 colors
 #define MAX_DEPTH 7
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 1
-#define WIN 100
-#define LOSE -100
+#define WIN 100000
+#define LOSE -100000
 #define DRAW 0
+#define INV_MOVE_CPT -100001
+#define INV_MOVE_PLY 100001
 
 struct Position {
 	int cells_player_black[NUMBER_OF_CELLS];		// each cell contains a certain number of seeds
@@ -61,7 +63,7 @@ bool finalPosition(Position* pos_current, bool computer_play, int depth) {
 }
 
 //Return the total amount of seeds in cell i (black+red)
-int total_seeds(Position* pos, bool computer_side, int i){
+int total_seeds(Position* pos, bool computer_side, int i) {
 	if (computer_side) return pos->cells_computer_black[i] + pos->cells_computer_red[i];
 	return pos->cells_player_black[i] + pos->cells_player_red[i];
 }
@@ -110,18 +112,29 @@ void empty_cell(Position* pos, bool computer_side, int i) {
 
 //Evaluate a position
 int evaluation(Position* pos_current, bool computer_play, int depth) {
-	int seeds_difference = pos_current->seeds_computer - pos_current->seeds_player;
+	int points_difference = pos_current->seeds_computer - pos_current->seeds_player;
 	int number_of_seeds_difference = 0;
+	int number_of_playable_case_difference = 0;
 	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-		number_of_seeds_difference += total_seeds(pos_current, true, i) - total_seeds(pos_current, false, i);
+		int seed_cpt = total_seeds(pos_current, true, i);
+		int seed_ply = total_seeds(pos_current, false, i);
+		number_of_seeds_difference += seed_cpt - seed_ply;
+		if (seed_cpt > 0) number_of_playable_case_difference++;
+		if (seed_ply > 0) number_of_playable_case_difference--;
 	}
-	return seeds_difference * 100 + number_of_seeds_difference;
+	return points_difference * 100 + 10 * number_of_playable_case_difference + number_of_seeds_difference;
+}
+
+int evaluation_old(Position* pos_current, bool computer_play, int depth) {
+	int seeds_difference = pos_current->seeds_computer - pos_current->seeds_player;
+	return seeds_difference;
 }
 
 //Return 1 if we can play the case i, 0 otherwise
 bool validMove(Position* pos_current, bool computer_play, int i) {
 	if (i < 0 || i >= NUMBER_OF_CELLS) return false;
-	return total_seeds(pos_current, computer_play, i) > 0;
+	bool empty = total_seeds(pos_current, computer_play, i) <= 0;
+	return !empty;
 }
 
 //Play the move on the hole i
@@ -226,7 +239,7 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	}
 }
 
-int minMaxValue(Position* pos_current, int* next, bool* red_first, bool computer_play, int depth, int depthMax) {
+int minMaxValue(Position* pos_current, int* next, bool* red_first, bool computer_play, int depth, int depthMax, bool old_eval) {
 	// computer_play is true if the computer has to play and false otherwise
 	int tab_values[NUMBER_OF_CELLS];
 	int tab_values2[NUMBER_OF_CELLS];
@@ -240,6 +253,7 @@ int minMaxValue(Position* pos_current, int* next, bool* red_first, bool computer
 		// WRITE the code: returns VALMAX (=96) if the computer wins, -96 if it loses; 0 if draw
 	}
 	if (depth == depthMax) {
+		if(old_eval) return evaluation_old(pos_current, computer_play, depth);
 		return evaluation(pos_current, computer_play, depth);
 		// the simplest evealution fucntion is the difference of the taken seeds
 	}
@@ -250,20 +264,39 @@ int minMaxValue(Position* pos_current, int* next, bool* red_first, bool computer
 		if (validMove(pos_current, computer_play, i)) {
 			// WRITE function playMove(&pos_next,pos_current, computer_play,i)
 			// we play th emove i from pos_current and obtain the new position pos_next
-			playMove(&pos_next, pos_current, computer_play, i, true);			//red first
-			playMove(&pos_next2, pos_current, computer_play, i, false);			//black first
-			// pos_next is the new current poisition and we change the player
-			tab_values[i] = minMaxValue(&pos_next, next, red_first, !computer_play, depth + 1, depthMax);
-			tab_values2[i] = minMaxValue(&pos_next2, next, red_first, !computer_play, depth + 1, depthMax);
+			bool play_red = false;
+			bool play_black = false;
+			//if red first but there is no red, we don't explore the tree (perf gain)
+			if ((red_first && red_seeds(pos_current, computer_play, i) == 0)) {
+				if (computer_play) tab_values[i] = INV_MOVE_CPT;
+				else tab_values[i] = INV_MOVE_PLY;
+				play_red = true;
+			} //if black first but there is no black, we don't explore the tree
+			else if (!red_first && black_seeds(pos_current, computer_play, i) == 0) {
+				if (computer_play) tab_values2[i] = INV_MOVE_CPT;
+				else tab_values2[i] = INV_MOVE_PLY;
+				play_black = false;
+			}
+			if (false) {}
+			else {
+				if (!play_red) {
+					playMove(&pos_next, pos_current, computer_play, i, true);			//red first
+					tab_values[i] = minMaxValue(&pos_next, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
+				}
+				if (!play_black) {
+					playMove(&pos_next2, pos_current, computer_play, i, false);			//black first
+					tab_values2[i] = minMaxValue(&pos_next2, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
+				}
+			}
 		}
 		else {
 			if (computer_play) {
-				tab_values[i] = LOSE;
-				tab_values2[i] = LOSE;
+				tab_values[i] = INV_MOVE_CPT;
+				tab_values2[i] = INV_MOVE_CPT;
 			}
 			else {
-				tab_values[i] = WIN;
-				tab_values2[i] = WIN;
+				tab_values[i] = INV_MOVE_PLY;
+				tab_values2[i] = INV_MOVE_PLY;
 			}
 		}
 	}
@@ -304,7 +337,7 @@ void init(Position* position, bool computer_start) {
 void print_position(Position* position) {
 	std::cout << "(B R)" << std::endl;
 	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-		std::cout << "(" << position->cells_computer_black[NUMBER_OF_CELLS-i-1] << " " << position->cells_computer_red[NUMBER_OF_CELLS - i - 1] << ") ";
+		std::cout << "(" << position->cells_computer_black[NUMBER_OF_CELLS - i - 1] << " " << position->cells_computer_red[NUMBER_OF_CELLS - i - 1] << ") ";
 	}
 	std::cout << " COMPUTER\t(" << position->seeds_computer << ")" << std::endl;
 	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
@@ -317,7 +350,10 @@ void print_position(Position* position) {
 int main() {
 	Position position;
 	Position next_position;
+	//Computer starts to play ?
 	bool computer_play = true;
+
+	//Enable the printing of the computer's evaluation
 	bool enable_evaluation = true;
 
 	int next = 0;
@@ -332,8 +368,9 @@ int main() {
 
 		//Print the position
 		print_position(&position);
-
-		if (computer_play) value = minMaxValue(&position, &next, &red_first, computer_play, 0, MAX_DEPTH);
+		//Computer = evaluation ; Player = old_evaluation
+		value = minMaxValue(&position, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
+		/*
 		else {
 			bool valid = false;
 			while (!valid) {
@@ -347,9 +384,9 @@ int main() {
 				if (!valid) std::cout << "Invalid move" << std::endl;
 			}
 		}
-
+		*/
 		//Print the decision
-		if (computer_play) {
+		if (true) {
 			if (computer_play) std::cout << "Computer plays case number " << NUMBER_OF_CELLS - 1 - next << ", ";
 			else std::cout << "Player plays case number " << NUMBER_OF_CELLS - 1 - next << ", ";
 			if (red_first) std::cout << "red first" << std::endl;
@@ -357,11 +394,11 @@ int main() {
 			if (enable_evaluation) {
 				std::cout << "Evaluation : ";
 				if (value > 0) {
-					if(computer_play) std::cout << "WIN" << std::endl;
+					if (computer_play) std::cout << "WIN" << std::endl;
 					else std::cout << "LOSE" << std::endl;
 				}
 				else if (value < 0) {
-					if(computer_play) std::cout << "LOSE" << std::endl;
+					if (computer_play) std::cout << "LOSE" << std::endl;
 					else std::cout << "WIN" << std::endl;
 				}
 				else std::cout << "DRAW" << std::endl;
