@@ -1,11 +1,18 @@
 // AIGP.cpp : Ce fichier contient la fonction 'main'. L'exécution du programme commence et se termine à cet endroit.
 //
 
+/*
+n = 6 holes
+c = 2 colors
+1 special seed (2 colors)
+3 red / 3 black per hole
+*/
 #include "pch.h"
 #include <iostream>
 #define NUMBER_OF_CELLS 6
 #define MAX_DEPTH 7
-#define SEEDS_PER_HOLE 4
+#define SEEDS_PER_HOLE 3
+#define SPECIAL_SEED 1
 #define WIN 100
 #define LOSE -100
 #define DRAW 0
@@ -15,10 +22,29 @@ struct Position {
 	int cells_computer_black[NUMBER_OF_CELLS];
 	int cells_player_red[NUMBER_OF_CELLS];			// each cell contains a certain number of seeds
 	int cells_computer_red[NUMBER_OF_CELLS];
+	int special_seed;			// pos of the special seed (0->5 : computer // 6->11 : player)
 	bool computer_play;			// boolean true if the computer has to play and false otherwise
 	int seeds_player;			// seeds taken by the player
 	int seeds_computer;			// seeds taken by the computer
 };
+
+class Tree {
+public:
+	Position* node;
+	Tree** nodes;
+	int depth;
+	int alpha;
+	int beta;
+
+	//Constructors
+	Tree(Position* pos) : node(pos), depth(0), alpha(1000), beta(1000), nodes() {}
+	~Tree() { delete node; }
+
+	bool leaf() { return nodes == nullptr; }
+	Tree* getChild(int i) { return nodes[i]; }
+};
+
+
 
 //Function that determines if the position is a final position, which means it ends the game
 bool finalPosition(Position* pos_current, bool computer_play, int depth) {
@@ -85,7 +111,11 @@ void empty_cell(Position* pos, bool computer_side, int i) {
 //Evaluate a position
 int evaluation(Position* pos_current, bool computer_play, int depth) {
 	int seeds_difference = pos_current->seeds_computer - pos_current->seeds_player;
-	return seeds_difference;
+	int number_of_seeds_difference = 0;
+	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+		number_of_seeds_difference += total_seeds(pos_current, true, i) - total_seeds(pos_current, false, i);
+	}
+	return seeds_difference * 100 + number_of_seeds_difference;
 }
 
 //Return 1 if we can play the case i, 0 otherwise
@@ -185,11 +215,11 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	if (no_seed) {
 		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 			if (computer_play) {
-				pos_next->seeds_player += total_seeds(pos_next, computer_play, i);
+				pos_next->seeds_computer += total_seeds(pos_next, computer_play, i);
 				empty_cell(pos_next, computer_play, i);
 			}
 			else {
-				pos_next->seeds_computer += total_seeds(pos_next, computer_play, i);
+				pos_next->seeds_player += total_seeds(pos_next, computer_play, i);
 				empty_cell(pos_next, computer_play, i);
 			}
 		}
