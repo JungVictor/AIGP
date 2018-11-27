@@ -315,8 +315,6 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 					}
 					if (value < beta) beta = value;
 				}
-				
-
 				//end if evaluation
 			}
 			//end if valid
