@@ -7,7 +7,6 @@ x64*
 
 # Ignore useless files
 pch.cpp
-pch.h
 *.vcxproj*
 *.sln
 
