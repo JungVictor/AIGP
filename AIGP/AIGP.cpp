@@ -298,9 +298,7 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 						*red_first = color;
 						return value;
 					}
-					if (value > alpha) {
-						alpha = value;
-					}
+					if (value > alpha) alpha = value;
 				}
 				//if node : min
 				else {
@@ -315,9 +313,7 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 						*red_first = color;
 						return value;
 					}
-					if (value < beta) {
-						beta = value;
-					}
+					if (value < beta) beta = value;
 				}
 				
 
