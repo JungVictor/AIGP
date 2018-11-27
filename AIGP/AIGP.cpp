@@ -382,7 +382,7 @@ int main() {
 		//Print the position
 		print_position(&position);
 		//Computer = evaluation ; Player = old_evaluation
-		value = minMaxValue(&position, LOSE, WIN, &next, &red_first, computer_play, 0, MAX_DEPTH, false);
+		value = minMaxValue(&position, LOSE, WIN, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
 
 		if (validMove(&position, computer_play, next, red_first)) std::cout << "VALID" << std::endl;
 		else std::cout << "INVALID" << std::endl;
