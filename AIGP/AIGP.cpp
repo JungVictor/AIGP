@@ -7,10 +7,9 @@ c = 2 colors
 1 special seed (2 colors)
 3 red / 3 black per hole
 */
-#include "pch.h"
 #include <iostream>
 #define NUMBER_OF_CELLS 6
-#define MAX_DEPTH 7
+#define MAX_DEPTH 10
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 1
 #define WIN 100000
@@ -56,8 +55,6 @@ bool finalPosition(Position* pos_current, bool computer_play, int depth) {
 
 	bool more_than_half = pos_current->seeds_player > max_seeds || pos_current->seeds_computer > max_seeds;
 	if (more_than_half) return true;	//if a player has capturated more than half the seeds, then it's an end of the game
-
-	//missing cases
 
 	return false;
 }
@@ -131,10 +128,10 @@ int evaluation_old(Position* pos_current, bool computer_play, int depth) {
 }
 
 //Return 1 if we can play the case i, 0 otherwise
-bool validMove(Position* pos_current, bool computer_play, int i) {
+bool validMove(Position* pos_current, bool computer_play, int i, bool color) {
 	if (i < 0 || i >= NUMBER_OF_CELLS) return false;
-	bool empty = total_seeds(pos_current, computer_play, i) <= 0;
-	return !empty;
+	if (color) return red_seeds(pos_current, computer_play, i) > 0;
+	else return black_seeds(pos_current, computer_play, i) > 0;
 }
 
 //Play the move on the hole i
@@ -239,85 +236,101 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	}
 }
 
-int minMaxValue(Position* pos_current, int* next, bool* red_first, bool computer_play, int depth, int depthMax, bool old_eval) {
+int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red_first, bool computer_play, int depth, int depthMax, bool old_eval) {
 	// computer_play is true if the computer has to play and false otherwise
-	int tab_values[NUMBER_OF_CELLS];
-	int tab_values2[NUMBER_OF_CELLS];
-	Position pos_next; // In C : created on the stack: = very fast
-	Position pos_next2;
+
+	//Evaluation of a final position (win, lose or draw ?)
 	if (finalPosition(pos_current, computer_play, depth)) {
 		int difference = pos_current->seeds_computer - pos_current->seeds_player;
 		if (difference == 0) return DRAW;
 		if (difference > 0) return WIN;
 		if (difference < 0) return LOSE;
-		// WRITE the code: returns VALMAX (=96) if the computer wins, -96 if it loses; 0 if draw
 	}
+	//Evaluation if a leaf
 	if (depth == depthMax) {
 		if(old_eval) return evaluation_old(pos_current, computer_play, depth);
 		return evaluation(pos_current, computer_play, depth);
-		// the simplest evealution fucntion is the difference of the taken seeds
 	}
+	//Evaluation if a tree
+	Position pos_next; // In C : created on the stack: = very fast
+	int value;
+	if (computer_play) value = INV_MOVE_CPT;			//computer plays : take the max
+	else value = INV_MOVE_PLY;							//player plays : take the min
+
+	int next_move = -1;
+	bool next_color = false;
+
 	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-		// we play the move i
-		// WRITE function validMove(pos_current, computer_play,i)
-		// it checks whether we can select the seeds in cell i and play (if there is no seed the function returns false)
-		if (validMove(pos_current, computer_play, i)) {
-			// WRITE function playMove(&pos_next,pos_current, computer_play,i)
-			// we play th emove i from pos_current and obtain the new position pos_next
-			bool play_red = false;
-			bool play_black = false;
-			//if red first but there is no red, we don't explore the tree (perf gain)
-			if ((red_first && red_seeds(pos_current, computer_play, i) == 0)) {
-				if (computer_play) tab_values[i] = INV_MOVE_CPT;
-				else tab_values[i] = INV_MOVE_PLY;
-				play_red = true;
-			} //if black first but there is no black, we don't explore the tree
-			else if (!red_first && black_seeds(pos_current, computer_play, i) == 0) {
-				if (computer_play) tab_values2[i] = INV_MOVE_CPT;
-				else tab_values2[i] = INV_MOVE_PLY;
-				play_black = false;
-			}
-			if (false) {}
-			else {
-				if (!play_red) {
-					playMove(&pos_next, pos_current, computer_play, i, true);			//red first
-					tab_values[i] = minMaxValue(&pos_next, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
+		//color : red => 0 // black => 1
+		for (int c = 0; c < 2; c++) {
+			bool color = c == 0;	//red = true // black = false;
+			//We play the case i
+			//If the move is valid, we play it and evaluate it
+			if (validMove(pos_current, computer_play, i, color)) {
+				playMove(&pos_next, pos_current, computer_play, i, color);
+				int minmax = minMaxValue(&pos_next, alpha, beta, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
+
+				/* NAIVE EVALUATION
+				//If computer plays, we take the max and update it
+				if (computer_play && minmax >= value) {
+					value = minmax;
+					next_move = i;
+					next_color = color;
 				}
-				if (!play_black) {
-					playMove(&pos_next2, pos_current, computer_play, i, false);			//black first
-					tab_values2[i] = minMaxValue(&pos_next2, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
+				//If player plays, we take the min and update it
+				else if (!computer_play && minmax <= value) {
+					value = minmax;
+					next_move = i;
+					next_color = color;
 				}
+				*/
+				//ALPHA BETA CUT
+				//if node : max
+				if (computer_play) {
+					if (value <= minmax) {
+						value = minmax;
+						next_move = i;
+						next_color = color;
+					}
+					//beta cut
+					if (value >= beta) {
+						*next = i;
+						*red_first = color;
+						return value;
+					}
+					if (value > alpha) {
+						alpha = value;
+					}
+				}
+				//if node : min
+				else {
+					if (value >= minmax) {
+						value = minmax;
+						next_move = i;
+						next_color = color;
+					}
+					//alpha cut
+					if (value <= alpha) {
+						*next = i;
+						*red_first = color;
+						return value;
+					}
+					if (value < beta) {
+						beta = value;
+					}
+				}
+				
+
+				//end if evaluation
 			}
+			//end if valid
 		}
-		else {
-			if (computer_play) {
-				tab_values[i] = INV_MOVE_CPT;
-				tab_values2[i] = INV_MOVE_CPT;
-			}
-			else {
-				tab_values[i] = INV_MOVE_PLY;
-				tab_values2[i] = INV_MOVE_PLY;
-			}
-		}
+		//end for color
 	}
-	int res = tab_values[0];
-	*next = 0;
-	*red_first = true;
-	if (computer_play) {
-		// WRITE the code: res contains the MAX of tab_values
-		for (int i = 1; i < NUMBER_OF_CELLS; i++) {
-			if (tab_values[i] >= res) { res = tab_values[i]; *next = i; *red_first = true; }
-			if (tab_values2[i] >= res) { res = tab_values2[i]; *next = i; *red_first = false; }
-		}
-	}
-	else {
-		// WRITE the code: res contains the MIN of tab_values
-		for (int i = 1; i < NUMBER_OF_CELLS; i++) {
-			if (tab_values[i] <= res) { res = tab_values[i]; *next = i; *red_first = true; }
-			if (tab_values2[i] <= res) { res = tab_values2[i]; *next = i; *red_first = false; }
-		}
-	}
-	return res;
+	//end for i
+	*next = next_move;
+	*red_first = next_color;
+	return value;
 }
 
 //Initialize a starting position
@@ -369,7 +382,10 @@ int main() {
 		//Print the position
 		print_position(&position);
 		//Computer = evaluation ; Player = old_evaluation
-		value = minMaxValue(&position, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
+		value = minMaxValue(&position, LOSE, WIN, &next, &red_first, computer_play, 0, MAX_DEPTH, false);
+
+		if (validMove(&position, computer_play, next, red_first)) std::cout << "VALID" << std::endl;
+		else std::cout << "INVALID" << std::endl;
 		/*
 		else {
 			bool valid = false;
