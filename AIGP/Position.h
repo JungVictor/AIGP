@@ -85,6 +85,25 @@ public:
 		int points_difference = seeds_computer - seeds_player;
 		int number_of_seeds_difference = 0;
 		int number_of_playable_case_difference = 0;
+		int number_of_unplayable_cases = 0;
+		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+			int seed_cpt = total_seeds(true, i);
+			int seed_ply = total_seeds(false, i);
+			number_of_seeds_difference += seed_cpt - seed_ply;
+			//difference between the number of playable cases for each side
+			if (seed_cpt > 0) number_of_playable_case_difference++;
+			if (seed_ply > 0) number_of_playable_case_difference--;
+
+			if (seed_ply == 0) number_of_unplayable_cases++;
+		}
+		return points_difference * 1000 + 100 * number_of_playable_case_difference + 10 * number_of_unplayable_cases + number_of_seeds_difference;
+	}
+	
+	//Evaluate the position (OLD EVALUATION FUNCTION)
+	int evaluate_OLD() {
+		int points_difference = seeds_computer - seeds_player;
+		int number_of_seeds_difference = 0;
+		int number_of_playable_case_difference = 0;
 		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 			int seed_cpt = total_seeds(true, i);
 			int seed_ply = total_seeds(false, i);
@@ -92,13 +111,7 @@ public:
 			if (seed_cpt > 0) number_of_playable_case_difference++;
 			if (seed_ply > 0) number_of_playable_case_difference--;
 		}
-		return points_difference * 100 + 10 * number_of_playable_case_difference + number_of_seeds_difference;
-	}
-	
-	//Evaluate the position (OLD EVALUATION FUNCTION)
-	int evaluate_OLD() {
-		int seeds_difference = seeds_computer - seeds_player;
-		return seeds_difference;
+		return points_difference;
 	}
 
 	void init(bool computer_start) {

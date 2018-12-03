@@ -126,8 +126,8 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 	//Evaluation if a tree
 	Position pos_next; // In C : created on the stack: = very fast
 	int value;
-	if (computer_play) value = INV_MOVE_CPT;			//computer plays : take the max
-	else value = INV_MOVE_PLY;							//player plays : take the min
+	if (computer_play) value = -INF;			//computer plays : take the max
+	else value = INF;							//player plays : take the min
 
 	int next_move = -1;
 	bool next_color = false;
@@ -206,7 +206,7 @@ void exec() {
 		//Print the position
 		position->print();
 		//Computer = evaluation ; Player = old_evaluation
-		value = minMaxValue(position, LOSE, WIN, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
+		value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
 
 		if (true) {
 			if (computer_play) std::cout << "Computer plays case number " << NUMBER_OF_CELLS - 1 - next << ", ";
@@ -214,7 +214,8 @@ void exec() {
 			if (red_first) std::cout << "red first" << std::endl;
 			else std::cout << "black first" << std::endl;
 			if (enable_evaluation) {
-				std::cout << "Evaluation : ";
+				std::cout << "Evaluation : " << value << std::endl;
+				/*
 				if (value > 0) {
 					if (computer_play) std::cout << "WIN" << std::endl;
 					else std::cout << "LOSE" << std::endl;
@@ -224,6 +225,7 @@ void exec() {
 					else std::cout << "WIN" << std::endl;
 				}
 				else std::cout << "DRAW" << std::endl;
+				*/
 			}
 		}
 
