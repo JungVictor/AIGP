@@ -21,46 +21,40 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	pos_next->computer_play = !pos_next->computer_play;
 
 	//initialize the number of seed and empty the cell being played
-	int seeds_red = pos_next->red_seeds(computer_play, i);
-	int seeds_black = pos_next->black_seeds(computer_play, i);
+	int seeds_red = pos_next->red_seeds(i);
+	int seeds_black = pos_next->black_seeds(i);
 	int seeds = seeds_black + seeds_red;
-	pos_next->empty_cell(computer_play, i);
-
-	bool computer_side = computer_play;	//true if we add seeds in the computer side
+	pos_next->empty_cell(i);
 	int index = i;
 	for (int seed = 0; seed < seeds; seed++) {
-		index = (index + 1) % NUMBER_OF_CELLS;
-		//change the side if we reach the end of one side
-		if (index == 0) computer_side = !computer_side;
-		if (computer_side == computer_play && index == i) {
-			index = (index + 1) % NUMBER_OF_CELLS;
-			if (index == 0) computer_side = !computer_side;
-		}
+		index--;
+		if (index == i) index--;				//don't distribute seed on the starting hole
+		if (index < 0) index += TOTAL_CELLS;
+		
 		if (red_first) {
-			if (seeds_red - seed > 0) {
-				pos_next->add_red(computer_side, index);
-			}
-			else pos_next->add_black(computer_side, index);
+			if (seeds_red - seed > 0) pos_next->add_red(index);
+			else pos_next->add_black(index);
 		}
 		if (!red_first) {
-			if (seeds_black - seed > 0) {
-				pos_next->add_black(computer_side, index);
-			}
-			else pos_next->add_red(computer_side, index);
+			if (seeds_black - seed > 0) pos_next->add_black(index);
+			else pos_next->add_red(index);
 		}
 	}
 
 	//points
 	int j = 0;
 	bool earning_points = true;
+	if (computer_play && index < NUMBER_OF_CELLS) earning_points = false;
+	else if (!computer_play && index >= NUMBER_OF_CELLS) earning_points = false;
+
 	bool color = !red_first;	//false = black, true = red
 	int ind = index;
-	if (computer_play == computer_side) earning_points = false;
+	
 	//while we get seeds and we have not finished
 	while (earning_points && j < seeds) {
-		if (ind < 0) { ind = NUMBER_OF_CELLS - 1;  computer_side = !computer_side; }
-		int red = pos_next->red_seeds(computer_side, ind);
-		int black = pos_next->black_seeds(computer_side, ind);
+		if (ind >= TOTAL_CELLS) ind -= TOTAL_CELLS;
+		int red = pos_next->red_seeds(ind);
+		int black = pos_next->black_seeds(ind);
 
 		int number_of_seeds = 0;
 
@@ -70,17 +64,21 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 		//we look at the red seeds
 		if (color && red >= 2 && red <= 3) {
 			number_of_seeds = red;
-			pos_next->empty_red_cell(computer_side, ind);
+			pos_next->empty_red_cell(ind);
 		}
 
 		if (!color && black >= 2 && black <= 3) {
 			number_of_seeds = black;
-			pos_next->empty_black_cell(computer_side, ind);
+			pos_next->empty_black_cell(ind);
 		}
 
-		if (number_of_seeds == 0) earning_points = false;
 		j++;
-		ind--;
+		ind++;
+
+		//Updating conditions
+		if (number_of_seeds == 0) earning_points = false;
+		if (computer_play && ind < NUMBER_OF_CELLS) earning_points = false;
+		else if (!computer_play && ind >= NUMBER_OF_CELLS) earning_points = false;
 
 		//if computer is playing, then it earns the points
 		if (computer_play) pos_next->seeds_computer += number_of_seeds;
@@ -88,21 +86,23 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 		else pos_next->seeds_player += number_of_seeds;
 	}
 
-	bool no_seed = true;	//opponent cannot play
+	bool starving = true;	//opponent cannot play
 	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-		int seed = pos_next->total_seeds(!computer_play, i);
+		int seed;
+		if (computer_play) seed = pos_next->total_seeds(i + NUMBER_OF_CELLS);
+		else seed = pos_next->total_seeds(i);
 		//if there is at least one seed on opponent's side, then he can play
-		if (seed > 0) no_seed = false;
+		if (seed > 0) starving = false;
 	}
-	if (no_seed) {
+	if (starving) {
 		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 			if (computer_play) {
-				pos_next->seeds_computer += pos_next->total_seeds(computer_play, i);
-				pos_next->empty_cell(computer_play, i);
+				pos_next->seeds_computer += pos_next->total_seeds(i);
+				pos_next->empty_cell(i);
 			}
 			else {
-				pos_next->seeds_player += pos_next->total_seeds(computer_play, i);
-				pos_next->empty_cell(computer_play, i);
+				pos_next->seeds_player += pos_next->total_seeds(i + NUMBER_OF_CELLS);
+				pos_next->empty_cell(i + NUMBER_OF_CELLS);
 			}
 		}
 	}
@@ -131,8 +131,17 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 
 	int next_move = -1;
 	bool next_color = false;
-
-	for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+	int i;
+	int iteration;
+	if (computer_play) {
+		i = 0;
+		iteration = NUMBER_OF_CELLS;
+	}
+	else {
+		i = NUMBER_OF_CELLS;
+		iteration = TOTAL_CELLS;
+	}
+	for (i; i < iteration; i++) {
 		//color : red => 0 // black => 1
 		for (int c = 0; c < 2; c++) {
 			bool color = c == 0;	//red = true // black = false;
@@ -186,6 +195,10 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 }
 
 void exec() {
+	std::clock_t start;
+	double duration;
+	double total_duration = 0;
+
 	Position* position = new Position();
 	Position* next_position = new Position();
 
@@ -206,11 +219,21 @@ void exec() {
 		//Print the position
 		position->print();
 		//Computer = evaluation ; Player = old_evaluation
+		start = std::clock();
 		value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
+		duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
+		std::cout << "Temps du tour : " << duration << '\n';
+		total_duration += duration;
+
+		playMove(next_position, position, computer_play, next, red_first);
+		position = next_position;
+
+		if (computer_play && !COMPUTER_START) next = NUMBER_OF_CELLS + next;
+		if (!computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
 
 		if (true) {
-			if (computer_play) std::cout << "Computer plays case number " << NUMBER_OF_CELLS - 1 - next << ", ";
-			else std::cout << "Player plays case number " << NUMBER_OF_CELLS - 1 - next << ", ";
+			if (computer_play) std::cout << "Computer plays case number " << next + 1 << ", ";
+			else std::cout << "Player plays case number " << next + 1 << ", ";
 			if (red_first) std::cout << "red first" << std::endl;
 			else std::cout << "black first" << std::endl;
 			if (enable_evaluation) {
@@ -230,26 +253,16 @@ void exec() {
 		}
 
 		std::cout << std::endl;
-		playMove(next_position, position, computer_play, next, red_first);
-		position = next_position;
 		computer_play = !computer_play;
 
 		cpt++;	//number of move
 	}
 	position->print();
-	std::cout << cpt << std::endl;
+	std::cout << "Nombre de tours : " << cpt << std::endl;
+	std::cout << "Temps total : " << total_duration << std::endl;
 }
 
 int main() {
-	std::clock_t start;
-	double duration;
-
-	start = std::clock();
-
 	exec();
-
-	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-
-	std::cout << "printf: " << duration << '\n';
 	system("PAUSE");
 }
