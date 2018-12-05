@@ -16,9 +16,10 @@
 #define NUMBER_OF_CELLS 6
 #define TOTAL_CELLS 12
 #define MAX_DEPTH 10
+#define MAX_DEPTH_SPECIAL 6
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 2
-#define COMPUTER_START true
+#define COMPUTER_START false
 #define WIN 100000
 #define LOSE -100000
 #define DRAW 0

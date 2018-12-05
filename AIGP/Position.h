@@ -6,14 +6,15 @@ class Position {
 public:
 	int cells_red[TOTAL_CELLS];
 	int cells_black[TOTAL_CELLS];
-	int special_seed[SPECIAL_SEED];			// pos of the special seed (0->5 : computer // 6->11 : player)
+	int special_seed[TOTAL_CELLS];
+	int special_number;
 	bool computer_play;			// boolean true if the computer has to play and false otherwise
 	int seeds_player;			// seeds taken by the player
 	int seeds_computer;			// seeds taken by the computer
 
 	//Return the total amount of seeds in cell i
 	int total_seeds(int i) {
-		return cells_black[i] + cells_red[i];
+		return cells_black[i] + cells_red[i] + special_seed[i];
 	}
 	
 	//Return the amount of red seeds in cell i
@@ -26,6 +27,10 @@ public:
 		return cells_black[i];
 	}
 
+	int special_seeds(int i) {
+		return special_seed[i];
+	}
+
 	//Add a red seed at cell i
 	void add_red(int i) {
 		cells_red[i]++;
@@ -34,6 +39,11 @@ public:
 	//Add a black seed at cell i
 	void add_black(int i) {
 		cells_black[i]++;
+	}
+
+	//Add a special seed at cell i
+	void add_special(int i) {
+		special_seed[i]++;
 	}
 
 	//Remove the black seeds at cell i
@@ -46,10 +56,17 @@ public:
 		cells_red[i] = 0;
 	}
 
+	//Remove the special seed at cell i
+	void empty_special_seed(int i) {
+		if (special_seed[i] > 0) special_number -= special_seed[i];
+		special_seed[i] = 0;
+	}
+
 	//Empty the cell i
 	void empty_cell(int i) {
 		empty_black_cell(i);
 		empty_red_cell(i);
+		empty_special_seed(i);
 	}
 
 	//Is the position final ?
@@ -73,8 +90,15 @@ public:
 	}
 	
 	//Is the move i valid ?
-	bool validMove(int i, bool color) {
+	bool validMove(int i, bool color, int special_pos) {
 		if (i < 0 || i >= TOTAL_CELLS) return false;
+
+		//if we try to play a special seed and there is none, then not valid (-1 is no play)
+		if (special_pos > 0 && special_seed[i] <= 0) return false;
+
+		//if we don't play a special seed while there is one, then it's not valid
+		if (special_pos < 0 && special_seed[i] > 0) return false;
+
 		//if there is not enough seeds to feed the player
 		if (i % NUMBER_OF_CELLS >= total_seeds(i)) {
 			bool starving = true;
@@ -128,7 +152,12 @@ public:
 		for (int i = 0; i < TOTAL_CELLS; i++) {
 			cells_black[i] = SEEDS_PER_HOLE;
 			cells_red[i] = SEEDS_PER_HOLE;
+			special_seed[i] = 0;
 		}
+		special_seed[3] = 1;
+		special_seed[9] = 1;
+
+		special_number = 2;
 		computer_play = computer_start;
 		seeds_player = 0;
 		seeds_computer = 0;
@@ -138,7 +167,9 @@ public:
 		for (int i = 0; i < TOTAL_CELLS; i++) {
 			cells_black[i] = pos->cells_black[i];
 			cells_red[i] = pos->cells_red[i];
+			special_seed[i] = pos->special_seed[i];
 		}
+		special_number = pos->special_number;
 		computer_play = pos->computer_play;
 		seeds_player = pos->seeds_player;
 		seeds_computer = pos->seeds_computer;
@@ -150,21 +181,21 @@ public:
 		std::cout << "7  8  9  10 11 12" << std::endl;
 		if (COMPUTER_START) {
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[NUMBER_OF_CELLS - 1 - i] << " " << cells_red[NUMBER_OF_CELLS - 1 - i] << ") ";
+				std::cout << "(" << cells_black[NUMBER_OF_CELLS - 1 - i] << " " << special_seed[NUMBER_OF_CELLS - 1 - i] << " " << cells_red[NUMBER_OF_CELLS - 1 - i] << ") ";
 			}
 			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
 			for (int i = NUMBER_OF_CELLS; i < TOTAL_CELLS; i++) {
-				std::cout << "(" << cells_black[i] << " " << cells_red[i] << ") ";
+				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
 			}
 			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
 		}
 		else {
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[TOTAL_CELLS - i - 1] << " " << cells_red[TOTAL_CELLS - i - 1] << ") ";
+				std::cout << "(" << cells_black[TOTAL_CELLS - i - 1] << " " << special_seed[TOTAL_CELLS - i - 1] << " " << cells_red[TOTAL_CELLS - i - 1] << ") ";
 			}
 			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[i] << " " << cells_red[i] << ") ";
+				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
 			}
 			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
 		}

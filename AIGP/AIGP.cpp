@@ -15,34 +15,58 @@ c = 2 colors
 #include <cstdio>
 #include <ctime>
 
+int MAXIMUM_REACHED = 0;
+std::clock_t start;
+
+double time() {
+	return (std::clock() - start) / (double)CLOCKS_PER_SEC;
+}
+
 //Play the move on the hole i
-void playMove(Position* pos_next, Position* pos_current, bool computer_play, int i, bool red_first) {
+void playMove(Position* pos_next, Position* pos_current, bool computer_play, int i, bool red_first, int special_pos) {
 	pos_next->init(pos_current);
 	pos_next->computer_play = !pos_next->computer_play;
 
 	//initialize the number of seed and empty the cell being played
 	int seeds_red = pos_next->red_seeds(i);
 	int seeds_black = pos_next->black_seeds(i);
-	int seeds = seeds_black + seeds_red;
+	int seeds_special = pos_next->special_seeds(i);
+	int seeds = seeds_black + seeds_red + seeds_special;
 	pos_next->empty_cell(i);
+
+	int special_seed1 = special_pos;
+	int special_seed2 = -1;
+	if (seeds_special == 2) special_seed2 = special_pos + 1;
+
 	int index = i;
+	int distributed = 0;
+	int special_count = 0;
 	for (int seed = 0; seed < seeds; seed++) {
 		index--;
 		if (index == i) index--;				//don't distribute seed on the starting hole
 		if (index < 0) index += TOTAL_CELLS;
-		
-		if (red_first) {
-			if (seeds_red - seed > 0) pos_next->add_red(index);
-			else pos_next->add_black(index);
+		//if we're distributing either red or black seeds
+		if (special_count < seeds_special && (seed == special_seed1 || seed == special_seed2)) {
+			pos_next->add_special(index);
+			special_count++;
 		}
-		if (!red_first) {
-			if (seeds_black - seed > 0) pos_next->add_black(index);
-			else pos_next->add_red(index);
+		//if it's a special seed
+		else {
+			if (red_first) {
+				if (seeds_red - distributed > 0) pos_next->add_red(index);
+				else pos_next->add_black(index);
+			}
+			if (!red_first) {
+				if (seeds_black - distributed > 0) pos_next->add_black(index);
+				else pos_next->add_red(index);
+			}
+			distributed++;
 		}
 	}
 
 	//points
-	int j = 0;
+	special_count = 0;
+	int colored_seeds = 0;
 	bool earning_points = true;
 	if (computer_play && index < NUMBER_OF_CELLS) earning_points = false;
 	else if (!computer_play && index >= NUMBER_OF_CELLS) earning_points = false;
@@ -51,28 +75,50 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	int ind = index;
 	
 	//while we get seeds and we have not finished
-	while (earning_points && j < seeds) {
+	while (earning_points) {
 		if (ind >= TOTAL_CELLS) ind -= TOTAL_CELLS;
-		int red = pos_next->red_seeds(ind);
-		int black = pos_next->black_seeds(ind);
+		int red = pos_next->red_seeds(ind) + pos_next->special_seeds(ind);
+		int black = pos_next->black_seeds(ind) + pos_next->special_seeds(ind);
 
 		int number_of_seeds = 0;
 
-		if (red_first) if (seeds - j == seeds_red) color = !color;
-		if (!red_first) if (seeds - j == seeds_black) color = !color;
+		if (red_first) if (seeds - colored_seeds == seeds_red) color = !color;
+		if (!red_first) if (seeds - colored_seeds == seeds_black) color = !color;
 
-		//we look at the red seeds
-		if (color && red >= 2 && red <= 3) {
-			number_of_seeds = red;
-			pos_next->empty_red_cell(ind);
+		if (special_count < seeds_special && (ind == special_seed1 || ind == special_seed2)) {
+			bool capture = false;
+			if (red >= 2 && red <= 3) {
+				number_of_seeds = red - pos_next->special_seeds(ind);
+				pos_next->empty_red_cell(ind);
+				capture = true;
+			}
+			//we look at the black seeds
+			if (black >= 2 && black <= 3) {
+				number_of_seeds += black - pos_next->special_seeds(ind);
+				pos_next->empty_black_cell(ind);
+				capture = true;
+			}
+			if (capture) {
+				number_of_seeds += pos_next->special_seeds(ind);
+				pos_next->empty_special_seed(ind);
+			}
+			special_count++;
 		}
-
-		if (!color && black >= 2 && black <= 3) {
-			number_of_seeds = black;
-			pos_next->empty_black_cell(ind);
+		else {
+			//we look at the red seeds
+			if (color && red >= 2 && red <= 3) {
+				number_of_seeds = red;
+				pos_next->empty_red_cell(ind);
+				pos_next->empty_special_seed(ind);
+			}
+			//we look at the black seeds
+			if (!color && black >= 2 && black <= 3) {
+				number_of_seeds = black;
+				pos_next->empty_black_cell(ind);
+				pos_next->empty_special_seed(ind);
+			}
+			colored_seeds++;
 		}
-
-		j++;
 		ind++;
 
 		//Updating conditions
@@ -108,7 +154,7 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	}
 }
 
-int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red_first, bool computer_play, int depth, int depthMax, bool old_eval) {
+int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red_first, bool computer_play, int depth, int depthMax, bool old_eval, int* special_pos) {
 	// computer_play is true if the computer has to play and false otherwise
 
 	//Evaluation of a final position (win, lose or draw ?)
@@ -119,7 +165,8 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 		if (difference < 0) return LOSE;
 	}
 	//Evaluation if a leaf
-	if (depth == depthMax) {
+	if (depth >= depthMax) {
+		if (depth > MAXIMUM_REACHED) MAXIMUM_REACHED = depth;
 		if (old_eval) return pos_current->evaluate_OLD();
 		return pos_current->evaluate();
 	}
@@ -131,6 +178,9 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 
 	int next_move = -1;
 	bool next_color = false;
+	int next_s1 = -1;
+	int next_s2 = -1;
+
 	int i;
 	int iteration;
 	if (computer_play) {
@@ -145,57 +195,99 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 		//color : red => 0 // black => 1
 		for (int c = 0; c < 2; c++) {
 			bool color = c == 0;	//red = true // black = false;
-			//We play the case i
-			//If the move is valid, we play it and evaluate it
-			if (pos_current->validMove(i, color)) {
-				playMove(&pos_next, pos_current, computer_play, i, color);
-				int minmax = minMaxValue(&pos_next, alpha, beta, next, red_first, !computer_play, depth + 1, depthMax, old_eval);
-
-				//ALPHA BETA CUT
-				//if node : max
-				if (computer_play) {
-					if (value <= minmax) {
-						value = minmax;
-						next_move = i;
-						next_color = color;
-					}
-					//beta cut
-					if (value >= beta) {
-						*next = i;
-						*red_first = color;
-						return value;
-					}
-					if (value > alpha) alpha = value;
-				}
-				//if node : min
-				else {
-					if (value >= minmax) {
-						value = minmax;
-						next_move = i;
-						next_color = color;
-					}
-					//alpha cut
-					if (value <= alpha) {
-						*next = i;
-						*red_first = color;
-						return value;
-					}
-					if (value < beta) beta = value;
-				}
-				//end if evaluation
+			int special_seeds_options = 0;
+			int special_seed = -1;
+			if (pos_current->special_seeds(i) > 0) {
+				special_seeds_options += pos_current->total_seeds(i);
+				special_seed = 0;
 			}
-			//end if valid
+			//every position for the special seeds
+			for (special_seed; special_seed < special_seeds_options; special_seed++) {
+				//We play the case i
+				//If the move is valid, we play it and evaluate it
+				if (pos_current->validMove(i, color, special_seed)) {
+					playMove(&pos_next, pos_current, computer_play, i, color, special_seed);
+
+					//Maraboutage of the depth...
+					int options = 0;
+					if (computer_play) {
+						for (int opt = 0; opt < NUMBER_OF_CELLS; opt++) if (pos_current->total_seeds(opt) > 0) options++;
+					}
+					else {
+						for (int opt = NUMBER_OF_CELLS; opt < TOTAL_CELLS; opt++) if (pos_current->total_seeds(opt) > 0) options++;
+					}
+					int new_depth = 0;
+					if (options < 4 && pos_current->special_number <= 0 && time() < 2 && depthMax < 25) new_depth++;
+					if (depthMax == MAX_DEPTH_SPECIAL + 1 || special_seed > 0) new_depth = MAX_DEPTH_SPECIAL + 1;
+					else new_depth += depthMax;
+					//Maraboutage finished
+
+					int minmax = minMaxValue(&pos_next, alpha, beta, next, red_first, !computer_play, depth + 1, new_depth, old_eval, special_pos);
+
+					if (computer_play && minmax == WIN) {
+						*next = i;
+						*red_first = color;
+						*special_pos = special_seed;
+						return WIN;
+					}
+					if (!computer_play && minmax == LOSE) {
+						*next = i;
+						*red_first = color;
+						*special_pos = special_seed;
+						return LOSE;
+					}
+
+					//ALPHA BETA CUT
+					//if node : max
+					if (computer_play) {
+						if (value <= minmax) {
+							value = minmax;
+							next_move = i;
+							next_color = color;
+							next_s1 = special_seed;
+						}
+						//beta cut
+						if (value >= beta) {
+							*next = i;
+							*red_first = color;
+							*special_pos = special_seed;
+							return value;
+						}
+						if (value > alpha) alpha = value;
+					}
+					//if node : min
+					else {
+						if (value >= minmax) {
+							value = minmax;
+							next_move = i;
+							next_color = color;
+							next_s1 = special_seed;
+						}
+						//alpha cut
+						if (value <= alpha) {
+							*next = i;
+							*red_first = color;
+							*special_pos = special_seed;
+							return value;
+						}
+						if (value < beta) beta = value;
+					}
+					//end if evaluation
+				}
+				//end if valid
+			}
+			//end special seed 1
 		}
 		//end for color
 	}
 	//end for i
 	*next = next_move;
 	*red_first = next_color;
+	*special_pos = next_s1;
 	return value;
 }
 
 void exec() {
-	std::clock_t start;
 	double duration;
 	double total_duration = 0;
 
@@ -207,6 +299,8 @@ void exec() {
 
 	int next = 0;
 	int value = 0;
+	int special_pos = -1;
+
 	int cpt = 0;
 	int color = 0;
 	bool red_first = true;
@@ -220,22 +314,25 @@ void exec() {
 		position->print();
 		//Computer = evaluation ; Player = old_evaluation
 		start = std::clock();
-		value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play);
-		duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-		std::cout << "Temps du tour : " << duration << '\n';
+		MAXIMUM_REACHED = 0;
+		value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
+		duration = time();
+		std::cout << "Temps du tour : " << duration << " MAX DEPTH REACHED : " << MAXIMUM_REACHED << '\n';
 		total_duration += duration;
 
-		playMove(next_position, position, computer_play, next, red_first);
+		playMove(next_position, position, computer_play, next, red_first, special_pos);
 		position = next_position;
 
 		if (computer_play && !COMPUTER_START) next = NUMBER_OF_CELLS + next;
 		if (!computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
 
 		if (true) {
-			if (computer_play) std::cout << "Computer plays case number " << next + 1 << ", ";
-			else std::cout << "Player plays case number " << next + 1 << ", ";
-			if (red_first) std::cout << "red first" << std::endl;
-			else std::cout << "black first" << std::endl;
+			if (computer_play) std::cout << "Computer plays : " << next + 1;
+			else std::cout << "Player plays : " << next + 1;
+			if (red_first) std::cout << "R";
+			else std::cout << "B";
+			if (special_pos >= 0) std::cout << special_pos + 1 << std::endl;
+			else std::cout << std::endl;
 			if (enable_evaluation) {
 				std::cout << "Evaluation : " << value << std::endl;
 				/*
