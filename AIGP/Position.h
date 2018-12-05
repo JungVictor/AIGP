@@ -176,7 +176,7 @@ public:
 	}
 
 	void print() {
-		std::cout << "(B R)" << std::endl;
+		std::cout << "(B S R)" << std::endl;
 		std::cout << "6  5  4  3  2  1 " << std::endl;
 		std::cout << "7  8  9  10 11 12" << std::endl;
 		if (COMPUTER_START) {
