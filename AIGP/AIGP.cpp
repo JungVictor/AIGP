@@ -198,7 +198,7 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 			int special_seeds_options = 0;
 			int special_seed = -1;
 			if (pos_current->special_seeds(i) > 0) {
-				special_seeds_options += pos_current->total_seeds(i);
+				special_seeds_options += pos_current->total_seeds(i) - pos_current->special_seeds(i) + 1;
 				special_seed = 0;
 			}
 			//every position for the special seeds
