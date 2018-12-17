@@ -91,13 +91,22 @@ public:
 	
 	//Is the move i valid ?
 	bool validMove(int i, bool color, int special_pos) {
-		if (i < 0 || i >= TOTAL_CELLS) return false;
+		if (i < 0 || i >= TOTAL_CELLS) {
+			//std::cout << "Invalid move : can't play this cell" << std::endl;
+			return false;
+		}
 
 		//if we try to play a special seed and there is none, then not valid (-1 is no play)
-		if (special_pos > 0 && special_seed[i] <= 0) return false;
+		if (special_pos > 0 && special_seed[i] <= 0) {
+			//std::cout << "Invalid move : there is no special seed while we try to play one" << std::endl;
+			return false;
+		}
 
 		//if we don't play a special seed while there is one, then it's not valid
-		if (special_pos < 0 && special_seed[i] > 0) return false;
+		if (special_pos < 0 && special_seed[i] > 0) {
+			//std::cout << "Invalid move : there is a special seed while we try not to play one" << std::endl;
+			return false;
+		}
 
 		//if there is not enough seeds to feed the player
 		if (i % NUMBER_OF_CELLS >= total_seeds(i)) {
@@ -108,8 +117,12 @@ public:
 			else {
 				for (int j = 0; j < NUMBER_OF_CELLS; j++) if (total_seeds(j) > 0) starving = false;
 			}
-			if (starving) return false;
+			if (starving) {
+				//std::cout << "Invalid move : starving is not allowed" << std::endl;
+				return false;
+			}
 		}
+
 		if (color) return red_seeds(i) > 0;
 		else return black_seeds(i) > 0;
 	}
