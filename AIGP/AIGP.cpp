@@ -38,27 +38,42 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	int special_seed2 = -1;
 	if (seeds_special == 2) special_seed2 = special_pos + 1;
 
+	int last_seed_type = 0; //0 : red ; 1 : black ; 2 : special
+
 	int index = i;
 	int distributed = 0;
 	int special_count = 0;
 	for (int seed = 0; seed < seeds; seed++) {
-		index--;
-		if (index == i) index--;				//don't distribute seed on the starting hole
-		if (index < 0) index += TOTAL_CELLS;
+		index++;
+		if (index == i) index++;				//don't distribute seed on the starting hole
+		if (index >= TOTAL_CELLS) index -= TOTAL_CELLS;
 		//if we're distributing either red or black seeds
 		if (special_count < seeds_special && (seed == special_seed1 || seed == special_seed2)) {
 			pos_next->add_special(index);
 			special_count++;
+			last_seed_type = 2;
 		}
 		//if it's a special seed
 		else {
 			if (red_first) {
-				if (seeds_red - distributed > 0) pos_next->add_red(index);
-				else pos_next->add_black(index);
+				if (seeds_red - distributed > 0) {
+					pos_next->add_red(index);
+					last_seed_type = 0;
+				}
+				else {
+					pos_next->add_black(index);
+					last_seed_type = 1;
+				}
 			}
 			if (!red_first) {
-				if (seeds_black - distributed > 0) pos_next->add_black(index);
-				else pos_next->add_red(index);
+				if (seeds_black - distributed > 0) {
+					pos_next->add_black(index);
+					last_seed_type = 1;
+				}
+				else {
+					pos_next->add_red(index);
+					last_seed_type = 0;
+				}
 			}
 			distributed++;
 		}
@@ -71,31 +86,32 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 	if (computer_play && index < NUMBER_OF_CELLS) earning_points = false;
 	else if (!computer_play && index >= NUMBER_OF_CELLS) earning_points = false;
 
-	bool color = !red_first;	//false = black, true = red
+	bool color = false;		//if the color has been fixed
 	int ind = index;
 	
 	//while we get seeds and we have not finished
 	while (earning_points) {
-		if (ind >= TOTAL_CELLS) ind -= TOTAL_CELLS;
+		if (ind < 0) ind += TOTAL_CELLS;
 		int red = pos_next->red_seeds(ind) + pos_next->special_seeds(ind);
 		int black = pos_next->black_seeds(ind) + pos_next->special_seeds(ind);
 
 		int number_of_seeds = 0;
 
-		if (red_first) if (seeds - colored_seeds == seeds_red) color = !color;
-		if (!red_first) if (seeds - colored_seeds == seeds_black) color = !color;
-
-		if (special_count < seeds_special && (ind == special_seed1 || ind == special_seed2)) {
+		//Special seed : both types
+		if (last_seed_type == 2) {
 			bool capture = false;
 			if (red >= 2 && red <= 3) {
 				number_of_seeds = red - pos_next->special_seeds(ind);
 				pos_next->empty_red_cell(ind);
+				if(!color) last_seed_type = 0;					//last seed is red
 				capture = true;
 			}
 			//we look at the black seeds
 			if (black >= 2 && black <= 3) {
 				number_of_seeds += black - pos_next->special_seeds(ind);
 				pos_next->empty_black_cell(ind);
+				if (capture && !color) last_seed_type = 2;    //last seed is both
+				else if(!color) last_seed_type = 1;			  //last seed is black
 				capture = true;
 			}
 			if (capture) {
@@ -106,20 +122,21 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 		}
 		else {
 			//we look at the red seeds
-			if (color && red >= 2 && red <= 3) {
+			if (last_seed_type == 0 && red >= 2 && red <= 3) {
 				number_of_seeds = red;
 				pos_next->empty_red_cell(ind);
 				pos_next->empty_special_seed(ind);
 			}
 			//we look at the black seeds
-			if (!color && black >= 2 && black <= 3) {
+			if (last_seed_type == 1 && black >= 2 && black <= 3) {
 				number_of_seeds = black;
 				pos_next->empty_black_cell(ind);
 				pos_next->empty_special_seed(ind);
 			}
 			colored_seeds++;
 		}
-		ind++;
+		ind--;
+		color = true;
 
 		//Updating conditions
 		if (number_of_seeds == 0) earning_points = false;
@@ -171,7 +188,7 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 		return pos_current->evaluate();
 	}
 	//Evaluation if a tree
-	Position pos_next; // In C : created on the stack: = very fast
+	Position pos_next;
 	int value;
 	if (computer_play) value = -INF;			//computer plays : take the max
 	else value = INF;							//player plays : take the min
@@ -305,17 +322,43 @@ void exec() {
 	int color = 0;
 	bool red_first = true;
 	bool computer_play = COMPUTER_START;
+	bool invalid = false;
 	position->init(computer_play);
 
 	//While the game is not finished
-	while (!position->isFinal()) {
+	while (!position->isFinal() && !invalid) {
 
 		//Print the position
 		position->print();
 		//Computer = evaluation ; Player = old_evaluation
 		start = std::clock();
 		MAXIMUM_REACHED = 0;
-		value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
+		if(computer_play) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
+		else {
+			//Human
+			std::cout << "Hole : ";
+			std::cin >> next;
+			next = next - 1;
+			if (!COMPUTER_START) next = next + NUMBER_OF_CELLS;
+			std::cout << "Red first : ";
+			std::cin >> color;
+			red_first = color == 1;
+			if (position->special_seeds(next) > 0) {
+				std::cout << "Special seed position : ";
+				std::cin >> special_pos;
+				special_pos = special_pos - 1;
+			}
+			if (!position->validMove(next, red_first, special_pos)) {
+				std::cout << "Invalid move" << std::endl;
+				invalid = true;
+			}
+			if(!COMPUTER_START) std::cout << "Player plays : " << next + 1 - NUMBER_OF_CELLS;
+			else std::cout << "Player plays : " << next + 1;
+			if (red_first) std::cout << "R";
+			else std::cout << "B";
+			if (special_pos >= 0) std::cout << special_pos + 1 << std::endl;
+			else std::cout << std::endl;
+		}
 		duration = time();
 		std::cout << "Temps du tour : " << duration << " MAX DEPTH REACHED : " << MAXIMUM_REACHED << '\n';
 		total_duration += duration;
@@ -324,9 +367,9 @@ void exec() {
 		position = next_position;
 
 		if (computer_play && !COMPUTER_START) next = NUMBER_OF_CELLS + next;
-		if (!computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
+		//if (!computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
 
-		if (true) {
+		if (computer_play) {
 			if (computer_play) std::cout << "Computer plays : " << next + 1;
 			else std::cout << "Player plays : " << next + 1;
 			if (red_first) std::cout << "R";

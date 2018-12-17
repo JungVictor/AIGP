@@ -16,6 +16,15 @@ public:
 	int total_seeds(int i) {
 		return cells_black[i] + cells_red[i] + special_seed[i];
 	}
+
+	//Return the total amount of seeds on the board
+	int total_seeds() {
+		int seeds = 0;
+		for (int i = 0; i < TOTAL_CELLS; i++) {
+			seeds += total_seeds(i);
+		}
+		return seeds + seeds_computer + seeds_player;
+	}
 	
 	//Return the amount of red seeds in cell i
 	int red_seeds(int i) {
@@ -71,7 +80,7 @@ public:
 
 	//Is the position final ?
 	bool isFinal() {
-		int max_seeds = SEEDS_PER_HOLE * TOTAL_CELLS;
+		int max_seeds = SEEDS_PER_HOLE * TOTAL_CELLS + 1;
 		bool all_seeds = seeds_player + seeds_computer == max_seeds * 2;
 		if (all_seeds) return true;			//if all the seeds have been capturated, then it's an end of the game
 
@@ -143,22 +152,14 @@ public:
 
 			if (seed_ply > 16) number_of_unplayable_cases--;
 		}
+		number_of_unplayable_cases = 0;
+		number_of_seeds_difference = 0;
 		return points_difference * 1000 + 100 * number_of_playable_case_difference + 50 * number_of_unplayable_cases + number_of_seeds_difference;
 	}
 	
 	//Evaluate the position (OLD EVALUATION FUNCTION)
 	int evaluate_OLD() {
-		int points_difference = seeds_computer - seeds_player;
-		int number_of_seeds_difference = 0;
-		int number_of_playable_case_difference = 0;
-		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-			int seed_cpt = total_seeds(i);
-			int seed_ply = total_seeds(i + NUMBER_OF_CELLS);
-			number_of_seeds_difference += seed_cpt - seed_ply;
-			if (seed_cpt > 0) number_of_playable_case_difference++;
-			if (seed_ply > 0) number_of_playable_case_difference--;
-		}
-		return points_difference;
+		return seeds_computer - seeds_player;
 	}
 
 	void init(bool computer_start) {
@@ -167,8 +168,10 @@ public:
 			cells_red[i] = SEEDS_PER_HOLE;
 			special_seed[i] = 0;
 		}
-		special_seed[3] = 1;
-		special_seed[9] = 1;
+		if (SPECIAL_SEED > 0) {
+			special_seed[3] = 1;
+			special_seed[9] = 1;
+		}
 
 		special_number = 2;
 		computer_play = computer_start;
@@ -189,26 +192,26 @@ public:
 	}
 
 	void print() {
-		std::cout << "(B S R)" << std::endl;
-		std::cout << "6  5  4  3  2  1 " << std::endl;
-		std::cout << "7  8  9  10 11 12" << std::endl;
+		std::cout << "(B S R) " << total_seeds() << std::endl;
+		std::cout << "1  2  3  4 5 6 " << std::endl;
+		std::cout << "12 11 10 9 8 7" << std::endl;
 		if (COMPUTER_START) {
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[NUMBER_OF_CELLS - 1 - i] << " " << special_seed[NUMBER_OF_CELLS - 1 - i] << " " << cells_red[NUMBER_OF_CELLS - 1 - i] << ") ";
+				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
 			}
 			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
-			for (int i = NUMBER_OF_CELLS; i < TOTAL_CELLS; i++) {
-				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
+			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+				std::cout << "(" << cells_black[TOTAL_CELLS - i - 1] << " " << special_seed[TOTAL_CELLS - i - 1] << " " << cells_red[TOTAL_CELLS - i - 1] << ") ";
 			}
 			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
 		}
 		else {
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[TOTAL_CELLS - i - 1] << " " << special_seed[TOTAL_CELLS - i - 1] << " " << cells_red[TOTAL_CELLS - i - 1] << ") ";
+				std::cout << "(" << cells_black[NUMBER_OF_CELLS + i] << " " << special_seed[NUMBER_OF_CELLS + i] << " " << cells_red[NUMBER_OF_CELLS + i] << ") ";
 			}
 			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
+				std::cout << "(" << cells_black[NUMBER_OF_CELLS - i - 1] << " " << special_seed[NUMBER_OF_CELLS - i - 1] << " " << cells_red[NUMBER_OF_CELLS - i - 1] << ") ";
 			}
 			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
 		}
