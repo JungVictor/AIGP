@@ -150,16 +150,28 @@ public:
 			if (seed_cpt > 0) number_of_playable_case_difference++;
 			if (seed_ply > 0) number_of_playable_case_difference--;
 
-			if (seed_ply > 16) number_of_unplayable_cases--;
 		}
-		number_of_unplayable_cases = 0;
-		number_of_seeds_difference = 0;
-		return points_difference * 1000 + 100 * number_of_playable_case_difference + 50 * number_of_unplayable_cases + number_of_seeds_difference;
+		//number_of_seeds_difference = 0;
+		return points_difference * 1000 + 100 * number_of_playable_case_difference + 200 * number_of_seeds_difference;
 	}
 	
 	//Evaluate the position (OLD EVALUATION FUNCTION)
 	int evaluate_OLD() {
-		return seeds_computer - seeds_player;
+		int points_difference = seeds_computer - seeds_player;
+		int number_of_seeds_difference = 0;
+		int number_of_playable_case_difference = 0;
+		int number_of_unplayable_cases = 0;
+		for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+			int seed_cpt = total_seeds(i);
+			int seed_ply = total_seeds(i + NUMBER_OF_CELLS);
+			number_of_seeds_difference += seed_cpt - seed_ply;
+			//difference between the number of playable cases for each side
+			if (seed_cpt > 0) number_of_playable_case_difference++;
+			if (seed_ply > 0) number_of_playable_case_difference--;
+
+		}
+		//number_of_seeds_difference = 0;
+		return points_difference * 1000 + 100 * number_of_playable_case_difference + 100 * number_of_seeds_difference;
 	}
 
 	void init(bool computer_start) {
@@ -167,10 +179,6 @@ public:
 			cells_black[i] = SEEDS_PER_HOLE;
 			cells_red[i] = SEEDS_PER_HOLE;
 			special_seed[i] = 0;
-		}
-		if (SPECIAL_SEED > 0) {
-			special_seed[3] = 1;
-			special_seed[9] = 1;
 		}
 
 		special_number = 2;

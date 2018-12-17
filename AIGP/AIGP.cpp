@@ -235,7 +235,7 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 					}
 					int new_depth = 0;
 					if (options < 4 && pos_current->special_number <= 0 && time() < 2 && depthMax < 25) new_depth++;
-					if (depthMax == MAX_DEPTH_SPECIAL + 1 || special_seed > 0) new_depth = MAX_DEPTH_SPECIAL + 1;
+					if (depthMax == MAX_DEPTH_SPECIAL + 1 || special_seed > 0) new_depth = MAX_DEPTH_SPECIAL;
 					else new_depth += depthMax;
 					//Maraboutage finished
 
@@ -317,6 +317,7 @@ void exec() {
 	int next = 0;
 	int value = 0;
 	int special_pos = -1;
+	char h_color;
 
 	int cpt = 0;
 	int color = 0;
@@ -324,6 +325,25 @@ void exec() {
 	bool computer_play = COMPUTER_START;
 	bool invalid = false;
 	position->init(computer_play);
+
+	for (int i = 0; i < 2; i++) {
+		position->print();
+		std::cout << "Place special seed ";
+		if (computer_play) std::cout << "(computer) : ";
+		else std::cout << "(player) : ";
+		std::cin >> next;
+
+		next = next - 1;
+		//When AI plays but don't begin
+		if (computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
+		//When Player plays but begin
+		if (!computer_play && !COMPUTER_START) next = next + NUMBER_OF_CELLS;
+
+		position->add_special(next);
+		computer_play = !computer_play;
+	}
+
+	next = 0;
 
 	//While the game is not finished
 	while (!position->isFinal() && !invalid) {
@@ -333,16 +353,16 @@ void exec() {
 		//Computer = evaluation ; Player = old_evaluation
 		start = std::clock();
 		MAXIMUM_REACHED = 0;
-		if(computer_play) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
+		if(true) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
 		else {
 			//Human
-			std::cout << "Hole : ";
+			std::cout << "Play : ";
 			std::cin >> next;
 			next = next - 1;
 			if (!COMPUTER_START) next = next + NUMBER_OF_CELLS;
-			std::cout << "Red first : ";
-			std::cin >> color;
-			red_first = color == 1;
+			std::cout << "Color : ";
+			std::cin >> h_color;
+			red_first = (h_color == 'R' || h_color == 'r');
 			if (position->special_seeds(next) > 0) {
 				std::cout << "Special seed position : ";
 				std::cin >> special_pos;
