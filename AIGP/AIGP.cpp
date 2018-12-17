@@ -353,7 +353,8 @@ void exec() {
 		//Computer = evaluation ; Player = old_evaluation
 		start = std::clock();
 		MAXIMUM_REACHED = 0;
-		if(true) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !computer_play, &special_pos);
+		special_pos = -1;
+		if(computer_play) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !COMPUTER_START, &special_pos);
 		else {
 			//Human
 			std::cout << "Play : ";

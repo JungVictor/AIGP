@@ -19,7 +19,7 @@
 #define MAX_DEPTH_SPECIAL 6
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 2
-#define COMPUTER_START false
+#define COMPUTER_START true
 #define WIN 100000
 #define LOSE -100000
 #define DRAW 0

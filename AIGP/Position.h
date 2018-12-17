@@ -178,6 +178,10 @@ public:
 		return points_difference * 1000 + 100 * number_of_playable_case_difference + 100 * number_of_seeds_difference;
 	}
 
+	int evaluate_BASE() {
+		return seeds_computer - seeds_player;
+	}
+
 	void init(bool computer_start) {
 		for (int i = 0; i < TOTAL_CELLS; i++) {
 			cells_black[i] = SEEDS_PER_HOLE;
