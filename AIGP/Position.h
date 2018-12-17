@@ -118,7 +118,11 @@ public:
 		}
 
 		//if there is not enough seeds to feed the player
-		if (i % NUMBER_OF_CELLS >= total_seeds(i)) {
+		//Côté ordi : i + total_seeds(i) >= NUMBER_OF_CELLS
+		//Côté joueur : (i - NUMBER_OF_CELLS) + total_seeds(i) >= NUMBER_OF_CELLS
+
+		// i % NUMBER_OF_CELLS + total_seeds(i) >= NUMBER_OF_CELLS
+		if (i % NUMBER_OF_CELLS + total_seeds(i) < NUMBER_OF_CELLS) {
 			bool starving = true;
 			if (i < NUMBER_OF_CELLS) {
 				for (int j = NUMBER_OF_CELLS; j < TOTAL_CELLS; j++) if (total_seeds(j) > 0) starving = false;
