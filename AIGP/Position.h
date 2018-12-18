@@ -136,6 +136,49 @@ public:
 			}
 		}
 
+		if (red_seeds(i) == 0 && black_seeds(i) == 0 && special_seeds(i) > 0) return true;
+		if (color) return red_seeds(i) > 0;
+		else return black_seeds(i) > 0;
+	}
+
+	bool validMove_print(int i, bool color, int special_pos) {
+		if (i < 0 || i >= TOTAL_CELLS) {
+			std::cout << "Invalid move : can't play this cell" << std::endl;
+			return false;
+		}
+
+		//if we try to play a special seed and there is none, then not valid (-1 is no play)
+		if (special_pos > 0 && special_seed[i] <= 0) {
+			std::cout << "Invalid move : there is no special seed while we try to play one" << std::endl;
+			return false;
+		}
+
+		//if we don't play a special seed while there is one, then it's not valid
+		if (special_pos < 0 && special_seed[i] > 0) {
+			std::cout << "Invalid move : there is a special seed while we try not to play one" << std::endl;
+			return false;
+		}
+
+		//if there is not enough seeds to feed the player
+		//Côté ordi : i + total_seeds(i) >= NUMBER_OF_CELLS
+		//Côté joueur : (i - NUMBER_OF_CELLS) + total_seeds(i) >= NUMBER_OF_CELLS
+
+		// i % NUMBER_OF_CELLS + total_seeds(i) >= NUMBER_OF_CELLS
+		if (i % NUMBER_OF_CELLS + total_seeds(i) < NUMBER_OF_CELLS) {
+			bool starving = true;
+			if (i < NUMBER_OF_CELLS) {
+				for (int j = NUMBER_OF_CELLS; j < TOTAL_CELLS; j++) if (total_seeds(j) > 0) starving = false;
+			}
+			else {
+				for (int j = 0; j < NUMBER_OF_CELLS; j++) if (total_seeds(j) > 0) starving = false;
+			}
+			if (starving) {
+				std::cout << "Invalid move : starving is not allowed" << std::endl;
+				return false;
+			}
+		}
+
+		if (red_seeds(i) == 0 && black_seeds(i) == 0 && special_seeds(i) > 0) return true;
 		if (color) return red_seeds(i) > 0;
 		else return black_seeds(i) > 0;
 	}

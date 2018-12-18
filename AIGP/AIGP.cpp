@@ -234,8 +234,8 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 						for (int opt = NUMBER_OF_CELLS; opt < TOTAL_CELLS; opt++) if (pos_current->total_seeds(opt) > 0) options++;
 					}
 					int new_depth = 0;
-					if (options < 4 && pos_current->special_number <= 0 && time() < 2 && depthMax < 25) new_depth++;
-					if (depthMax == MAX_DEPTH_SPECIAL + 1 || special_seed > 0) new_depth = MAX_DEPTH_SPECIAL;
+					//if (options < 4 && pos_current->special_number <= 0 && time() < 2 && depthMax < 25) new_depth++;
+					if (special_seed > 0) new_depth = MAX_DEPTH_SPECIAL;
 					else new_depth += depthMax;
 					//Maraboutage finished
 
@@ -364,14 +364,15 @@ void exec() {
 			std::cout << "Color : ";
 			std::cin >> h_color;
 			red_first = (h_color == 'R' || h_color == 'r');
+			if (red_first && position->red_seeds(next) <= 0) red_first = false;
+			if (!red_first && position->black_seeds(next) <= 0) red_first = true;
 			if (position->special_seeds(next) > 0) {
 				std::cout << "Special seed position : ";
 				std::cin >> special_pos;
 				special_pos = special_pos - 1;
 			}
 			if (!position->validMove(next, red_first, special_pos)) {
-				std::cout << "Invalid move" << std::endl;
-				invalid = true;
+				position->validMove_print(next, red_first, special_pos);
 			}
 			if(!COMPUTER_START) std::cout << "Player plays : " << next + 1 - NUMBER_OF_CELLS;
 			else std::cout << "Player plays : " << next + 1;
@@ -381,7 +382,7 @@ void exec() {
 			else std::cout << std::endl;
 		}
 		duration = time();
-		std::cout << "Temps du tour : " << duration << " MAX DEPTH REACHED : " << MAXIMUM_REACHED << '\n';
+		//std::cout << "Temps du tour : " << duration << " MAX DEPTH REACHED : " << MAXIMUM_REACHED << '\n';
 		total_duration += duration;
 
 		playMove(next_position, position, computer_play, next, red_first, special_pos);
