@@ -13,13 +13,16 @@
 
 #endif //PCH_H
 
+// COMPUTER_START false : evaluate_OLD > base (10 - 7); base > evaluate (10 - 7) ; evaluate = base (7 - 7)
+// COMPUTER_START true  : base > evaluate_OLD (10 - 7); base > evaluate (10 - 7) ; evaluate > base (7 - 7)
+
 #define NUMBER_OF_CELLS 6
 #define TOTAL_CELLS 12
-#define MAX_DEPTH 11
-#define MAX_DEPTH_SPECIAL 8
+#define MAX_DEPTH 10
+#define MAX_DEPTH_SPECIAL 7
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 2
-#define COMPUTER_START true
+#define COMPUTER_START false
 #define WIN 100000
 #define LOSE -100000
 #define DRAW 0

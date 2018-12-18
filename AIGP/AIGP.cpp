@@ -184,8 +184,8 @@ int minMaxValue(Position* pos_current, int alpha, int beta, int* next, bool* red
 	//Evaluation if a leaf
 	if (depth >= depthMax) {
 		if (depth > MAXIMUM_REACHED) MAXIMUM_REACHED = depth;
-		if (old_eval) return pos_current->evaluate_OLD();
-		return pos_current->evaluate();
+		if (old_eval) return pos_current->evaluate_BASE();
+		return pos_current->evaluate_OLD();
 	}
 	//Evaluation if a tree
 	Position pos_next;
@@ -354,7 +354,7 @@ void exec() {
 		start = std::clock();
 		MAXIMUM_REACHED = 0;
 		special_pos = -1;
-		if(computer_play) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, !COMPUTER_START, &special_pos);
+		if(computer_play) value = minMaxValue(position, -INF, INF, &next, &red_first, computer_play, 0, MAX_DEPTH, COMPUTER_START, &special_pos);
 		else {
 			//Human
 			std::cout << "Play : ";
