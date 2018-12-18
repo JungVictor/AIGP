@@ -258,21 +258,21 @@ public:
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 				std::cout << "(" << cells_black[i] << " " << special_seed[i] << " " << cells_red[i] << ") ";
 			}
-			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
+			std::cout << " VICTOR  \t(" << seeds_computer << ")" << std::endl;
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 				std::cout << "(" << cells_black[TOTAL_CELLS - i - 1] << " " << special_seed[TOTAL_CELLS - i - 1] << " " << cells_red[TOTAL_CELLS - i - 1] << ") ";
 			}
-			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
+			std::cout << " OPPONENT\t(" << seeds_player << ")" << std::endl;
 		}
 		else {
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 				std::cout << "(" << cells_black[NUMBER_OF_CELLS + i] << " " << special_seed[NUMBER_OF_CELLS + i] << " " << cells_red[NUMBER_OF_CELLS + i] << ") ";
 			}
-			std::cout << " PLAYER  \t(" << seeds_player << ")" << std::endl;
+			std::cout << " OPPONENT\t(" << seeds_player << ")" << std::endl;
 			for (int i = 0; i < NUMBER_OF_CELLS; i++) {
 				std::cout << "(" << cells_black[NUMBER_OF_CELLS - i - 1] << " " << special_seed[NUMBER_OF_CELLS - i - 1] << " " << cells_red[NUMBER_OF_CELLS - i - 1] << ") ";
 			}
-			std::cout << " COMPUTER\t(" << seeds_computer << ")" << std::endl;
+			std::cout << " VICTOR  \t(" << seeds_computer << ")" << std::endl;
 		}
 		std::cout << std::endl << std::endl;
 	}

@@ -103,15 +103,15 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 			if (red >= 2 && red <= 3) {
 				number_of_seeds = red - pos_next->special_seeds(ind);
 				pos_next->empty_red_cell(ind);
-				if(!color) last_seed_type = 0;					//last seed is red
+				last_seed_type = 0;					//last seed is red
 				capture = true;
 			}
 			//we look at the black seeds
 			if (black >= 2 && black <= 3) {
 				number_of_seeds += black - pos_next->special_seeds(ind);
 				pos_next->empty_black_cell(ind);
-				if (capture && !color) last_seed_type = 2;    //last seed is both
-				else if(!color) last_seed_type = 1;			  //last seed is black
+				if (capture) last_seed_type = 2;    //last seed is both
+				else last_seed_type = 1;			//last seed is black
 				capture = true;
 			}
 			if (capture) {
@@ -329,15 +329,15 @@ void exec() {
 	for (int i = 0; i < 2; i++) {
 		position->print();
 		std::cout << "Place special seed ";
-		if (computer_play) std::cout << "(computer) : ";
-		else std::cout << "(player) : ";
+		if (computer_play) std::cout << "(victor) : ";
+		else std::cout << "(opponent) : ";
 		std::cin >> next;
 
 		next = next - 1;
 		//When AI plays but don't begin
-		if (computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
+		if (computer_play && !COMPUTER_START) next = (next - NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
 		//When Player plays but begin
-		if (!computer_play && !COMPUTER_START) next = next + NUMBER_OF_CELLS;
+		if (!computer_play && !COMPUTER_START) next = (next + NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
 
 		position->add_special(next);
 		computer_play = !computer_play;
@@ -374,8 +374,8 @@ void exec() {
 			if (!position->validMove(next, red_first, special_pos)) {
 				position->validMove_print(next, red_first, special_pos);
 			}
-			if(!COMPUTER_START) std::cout << "Player plays : " << next + 1 - NUMBER_OF_CELLS;
-			else std::cout << "Player plays : " << next + 1;
+			if(!COMPUTER_START) std::cout << "Opponent plays : " << next + 1 - NUMBER_OF_CELLS;
+			else std::cout << "Opponent plays : " << next + 1;
 			if (red_first) std::cout << "R";
 			else std::cout << "B";
 			if (special_pos >= 0) std::cout << special_pos + 1 << std::endl;
@@ -392,8 +392,8 @@ void exec() {
 		//if (!computer_play && !COMPUTER_START) next = next - NUMBER_OF_CELLS;
 
 		if (computer_play) {
-			if (computer_play) std::cout << "Computer plays : " << next + 1;
-			else std::cout << "Player plays : " << next + 1;
+			if (computer_play) std::cout << "Victor plays : " << next + 1;
+			else std::cout << "Opponent plays : " << next + 1;
 			if (red_first) std::cout << "R";
 			else std::cout << "B";
 			if (special_pos >= 0) std::cout << special_pos + 1 << std::endl;
