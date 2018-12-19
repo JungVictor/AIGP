@@ -122,6 +122,7 @@ public:
 		//Côté joueur : (i - NUMBER_OF_CELLS) + total_seeds(i) >= NUMBER_OF_CELLS
 
 		// i % NUMBER_OF_CELLS + total_seeds(i) >= NUMBER_OF_CELLS
+		/*
 		if (i % NUMBER_OF_CELLS + total_seeds(i) < NUMBER_OF_CELLS) {
 			bool starving = true;
 			if (i < NUMBER_OF_CELLS) {
@@ -135,6 +136,7 @@ public:
 				return false;
 			}
 		}
+		*/
 
 		if (red_seeds(i) == 0 && black_seeds(i) == 0 && special_seeds(i) > 0) return true;
 		if (color) return red_seeds(i) > 0;
@@ -164,6 +166,7 @@ public:
 		//Côté joueur : (i - NUMBER_OF_CELLS) + total_seeds(i) >= NUMBER_OF_CELLS
 
 		// i % NUMBER_OF_CELLS + total_seeds(i) >= NUMBER_OF_CELLS
+		/*
 		if (i % NUMBER_OF_CELLS + total_seeds(i) < NUMBER_OF_CELLS) {
 			bool starving = true;
 			if (i < NUMBER_OF_CELLS) {
@@ -176,7 +179,7 @@ public:
 				std::cout << "Invalid move : starving is not allowed" << std::endl;
 				return false;
 			}
-		}
+		}*/
 
 		if (red_seeds(i) == 0 && black_seeds(i) == 0 && special_seeds(i) > 0) return true;
 		if (color) return red_seeds(i) > 0;

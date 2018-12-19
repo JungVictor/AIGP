@@ -47,6 +47,7 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 		index++;
 		if (index == i) index++;				//don't distribute seed on the starting hole
 		if (index >= TOTAL_CELLS) index -= TOTAL_CELLS;
+		if (index == i) index++;				//don't distribute seed on the starting hole
 		//if we're distributing either red or black seeds
 		if (special_count < seeds_special && (seed == special_seed1 || seed == special_seed2)) {
 			pos_next->add_special(index);
