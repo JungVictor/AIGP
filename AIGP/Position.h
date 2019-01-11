@@ -179,8 +179,8 @@ public:
 				std::cout << "Invalid move : starving is not allowed" << std::endl;
 				return false;
 			}
-		}*/
-
+		}
+		*/
 		if (red_seeds(i) == 0 && black_seeds(i) == 0 && special_seeds(i) > 0) return true;
 		if (color) return red_seeds(i) > 0;
 		else return black_seeds(i) > 0;
@@ -202,7 +202,7 @@ public:
 
 		}
 		//number_of_seeds_difference = 0;
-		return points_difference * 1000 + 100 * number_of_playable_case_difference + 200 * number_of_seeds_difference;
+		return points_difference * 100 + 1000 * number_of_playable_case_difference + 100 * number_of_seeds_difference;
 	}
 	
 	//Evaluate the position (OLD EVALUATION FUNCTION)
@@ -279,5 +279,4 @@ public:
 		}
 		std::cout << std::endl << std::endl;
 	}
-
 };
