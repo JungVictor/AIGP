@@ -1,12 +1,6 @@
 // AIGP.cpp : Ce fichier contient la fonction 'main'. L'exécution du programme commence et se termine à cet endroit.
 //
 
-/*
-n = 6 holes
-c = 2 colors
-1 special seed (2 colors)
-3 red / 3 black per hole
-*/
 #pragma once
 
 #include "pch.h"
@@ -18,6 +12,7 @@ c = 2 colors
 
 std::clock_t start;
 
+//Get the current time
 double time() {
 	return (std::clock() - start) / (double)CLOCKS_PER_SEC;
 }
@@ -137,6 +132,7 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 			colored_seeds++;
 		}
 		ind--;
+		if (ind < 0) ind += TOTAL_CELLS;
 		color = true;
 
 		//Updating conditions
@@ -173,7 +169,7 @@ void playMove(Position* pos_next, Position* pos_current, bool computer_play, int
 }
 
 //Look at the moves from right to left
-int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Move* iterative_move, bool computer_play, int depth, int depthMax, bool old_eval) {
+int minMaxValue_right(Position* pos_current, Position* pos_start, int alpha, int beta, Move* move, Move* iterative_move, bool computer_play, int depth, int depthMax, bool old_eval, int turn) {
 	// computer_play is true if the computer has to play and false otherwise
 
 	//Evaluation of a final position (win, lose or draw ?)
@@ -185,8 +181,8 @@ int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Mo
 	}
 	//Evaluation if a leaf
 	if (depth >= depthMax) {
-		if (old_eval) return pos_current->evaluate_BASE();
-		return pos_current->evaluate();
+		if (old_eval) return pos_current->evaluate_OLD();
+		return pos_current->evaluate(turn, pos_start);
 	}
 	//Evaluation if a tree
 	Position pos_next;
@@ -226,23 +222,21 @@ int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Mo
 					playMove(&pos_next, pos_current, computer_play, i, color, special_seed);
 
 					//Best value of the son
-					int minmax = minMaxValue_right(&pos_next, alpha, beta, move, iterative_move, !computer_play, depth + 1, depthMax, old_eval);
+					int minmax = minMaxValue_right(&pos_next, pos_start, alpha, beta, move, iterative_move, !computer_play, depth + 1, depthMax, old_eval, turn);
 
 					if (computer_play && minmax == WIN) {
 						move->update(i, color, special_seed, WIN);
-						if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 						return WIN;
 					}
 					if (!computer_play && minmax == LOSE) {
 						move->update(i, color, special_seed, LOSE);
-						if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 						return LOSE;
 					}
 
 					//ALPHA BETA CUT
 					//if node : max
 					if (computer_play) {
-						if (value <= minmax) {
+						if (value < minmax) {
 							value = minmax;
 							next_move = i;
 							next_color = color;
@@ -251,14 +245,13 @@ int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Mo
 						//beta cut
 						if (value >= beta) {
 							move->update(i, color, special_seed, value);
-							if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 							return value;
 						}
 						if (value > alpha) alpha = value;
 					}
 					//if node : min
 					else {
-						if (value >= minmax) {
+						if (value > minmax) {
 							value = minmax;
 							next_move = i;
 							next_color = color;
@@ -267,7 +260,6 @@ int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Mo
 						//alpha cut
 						if (value <= alpha) {
 							move->update(i, color, special_seed, value);
-							if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 							return value;
 						}
 						if (value < beta) beta = value;
@@ -282,12 +274,11 @@ int minMaxValue_right(Position* pos_current, int alpha, int beta, Move* move, Mo
 	}
 	//end for i
 	move->update(next_move, next_color, next_special, value);
-	if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 	return value;
 }
 
 //Look at the moves from left to right
-int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Move* iterative_move, bool computer_play, int depth, int depthMax, bool old_eval) {
+int minMaxValue_left(Position* pos_current, Position* pos_start, int alpha, int beta, Move* move, Move* iterative_move, bool computer_play, int depth, int depthMax, bool old_eval, int turn) {
 	// computer_play is true if the computer has to play and false otherwise
 
 	//Evaluation of a final position (win, lose or draw ?)
@@ -299,8 +290,8 @@ int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Mov
 	}
 	//Evaluation if a leaf
 	if (depth >= depthMax) {
-		if (old_eval) return pos_current->evaluate_BASE();
-		return pos_current->evaluate();
+		if (old_eval) return pos_current->evaluate_OLD();
+		return pos_current->evaluate(turn, pos_start);
 	}
 	//Evaluation if a tree
 	Position pos_next;
@@ -339,23 +330,21 @@ int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Mov
 				if (pos_current->validMove(i, color, special_seed)) {
 					playMove(&pos_next, pos_current, computer_play, i, color, special_seed);
 
-					int minmax = minMaxValue_left(&pos_next, alpha, beta, move, iterative_move, !computer_play, depth + 1, depthMax, old_eval);
+					int minmax = minMaxValue_left(&pos_next, pos_start, alpha, beta, move, iterative_move, !computer_play, depth + 1, depthMax, old_eval, turn);
 
 					if (computer_play && minmax == WIN) {
 						move->update(i, color, special_seed, WIN);
-						if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 						return WIN;
 					}
 					if (!computer_play && minmax == LOSE) {
 						move->update(i, color, special_seed, LOSE);
-						if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 						return LOSE;
 					}
 
 					//ALPHA BETA CUT
 					//if node : max
 					if (computer_play) {
-						if (value <= minmax) {
+						if (value < minmax) {
 							value = minmax;
 							next_move = i;
 							next_color = color;
@@ -364,14 +353,13 @@ int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Mov
 						//beta cut
 						if (value >= beta) {
 							move->update(i, color, special_seed, value);
-							if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 							return value;
 						}
 						if (value > alpha) alpha = value;
 					}
 					//if node : min
 					else {
-						if (value >= minmax) {
+						if (value > minmax) {
 							value = minmax;
 							next_move = i;
 							next_color = color;
@@ -380,7 +368,6 @@ int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Mov
 						//alpha cut
 						if (value <= alpha) {
 							move->update(i, color, special_seed, value);
-							if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 							return value;
 						}
 						if (value < beta) beta = value;
@@ -395,35 +382,28 @@ int minMaxValue_left(Position* pos_current, int alpha, int beta, Move* move, Mov
 	}
 	//end for i
 	move->update(next_move, next_color, next_special, value);
-	if (depth == 0 && move->isSame(iterative_move) && move->value != iterative_move->value) iterative_move->update(move);
 	return value;
 }
 
-int minMax_best(Position* pos_current, Move* move, Move* best_move, bool computer_play, int depthMax, bool old_eval) {
-	Position new_pos;
-	playMove(&new_pos, pos_current, computer_play, best_move->hole, best_move->color, best_move->special);
-	int value = minMaxValue_right(&new_pos, -INF, INF, move, best_move, computer_play, 0, depthMax, old_eval);
-	return value;
-}
 
 //Function of maraboutage
-int iterative_deepening(Position* pos_current, Move* move, int depthMax, bool computer_play, bool old_eval) {
+int iterative_deepening(Position* pos_current, Move* move, int depthMax, bool computer_play, bool old_eval, int turn) {
 	int value;
 	int best_value = -INF;
 
 	Move* best_move = new Move();
+	Position pos_start;
+	pos_start.init(pos_current);
 
-	int depth = 1;
-	int best_move_depth = 1;
-	while(depth <= depthMax && time() < 1.5){
-		value = minMaxValue_right(pos_current, -INF, INF, move, best_move, computer_play, 0, depth, old_eval);
-		if (value > best_move->value || best_move->isSame(move)) {
-			best_move->update(move);
-			best_move_depth = depth;
-		}
+	int depth = 7;
+	int best_move_depth = 0;
+	while(depth <= depthMax && ((time() < 1.2 && depth <= 8) || (time() < 0.8 && depth > 8)) && best_move->value != WIN){
+		value = minMaxValue_left(pos_current, &pos_start, -INF, INF, move, best_move, computer_play, 0, depth, old_eval, turn);
+		best_move->update(move);
+		best_move_depth = depth;
 		depth++;
 	}
-	//std::cout << depth << " " << best_move_depth << std::endl;
+	std::cout << "Depth : " << best_move_depth << ", Turn : " << turn << std::endl;
 	move->update(best_move);
 	return best_move->value;
 }
@@ -433,6 +413,7 @@ void exec() {
 	double total_duration = 0;
 
 	Position* position = new Position();
+	Position* pos_start = new Position();
 	Position* next_position = new Position();
 	Move* move = new Move();
 	Move* iterative_move = new Move();
@@ -444,6 +425,8 @@ void exec() {
 	int value = 0;
 	int special_pos = -1;
 	char h_color;
+
+	int turn = 0;
 
 	int cpt = 0;
 	int color = 0;
@@ -473,15 +456,17 @@ void exec() {
 
 	//While the game is not finished
 	while (!position->isFinal() && !invalid) {
-
+		if (COMPUTER_START && computer_play) turn++;
+		else if (!COMPUTER_START && !computer_play) turn++;
 		//Print the position
 		position->print();
+		pos_start->init(position);
 		//Computer = evaluation ; Player = old_evaluation
 		start = std::clock();
 		special_pos = -1;
-		if (computer_play) value = iterative_deepening(position, move, MAX_DEPTH, computer_play, false);
-		//if (computer_play) value = minMaxValue_left(position, -INF, INF, move, iterative_move, computer_play, 0, MAX_DEPTH, true);
-		//else if(!computer_play) value = minMaxValue_right(position, -INF, INF, move, iterative_move, computer_play, 0, MAX_DEPTH, true);
+		if (computer_play) value = iterative_deepening(position, move, MAX_DEPTH, computer_play, false, turn);
+		//if (computer_play) value = minMaxValue_right(position, pos_start, -INF, INF, move, iterative_move, computer_play, 0, 8, false, turn);
+		//else if(!computer_play) value = minMaxValue_right(position, pos_start, -INF, INF, move, iterative_move, computer_play, 0, 8, true, turn);
 		else {
 			//Human plays
 			std::cout << "Play : ";
