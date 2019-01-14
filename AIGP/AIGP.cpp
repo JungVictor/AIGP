@@ -436,19 +436,22 @@ void exec() {
 	position->init(computer_play);
 
 	for (int i = 0; i < 2; i++) {
-		position->print();
-		std::cout << "Place special seed ";
-		if (computer_play) std::cout << "(victor) : ";
-		else std::cout << "(opponent) : ";
-		std::cin >> next;
+		if (computer_play) position->add_special(0);
+		else {
+			position->print();
+			std::cout << "Place special seed, player ";
+			if (computer_play) std::cout << (i+1) << " (victor) : ";
+			else std::cout << (i+1) << " (opponent) : ";
+			std::cin >> next;
 
-		next = next - 1;
-		//When AI plays but don't begin
-		if (computer_play && !COMPUTER_START) next = (next - NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
-		//When Player plays but begin
-		if (!computer_play && !COMPUTER_START) next = (next + NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
+			next = next - 1;
+			//When AI plays but don't begin
+			if (computer_play && !COMPUTER_START) next = (next - NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
+			//When Player plays but begin
+			if (!computer_play && !COMPUTER_START) next = (next + NUMBER_OF_CELLS + TOTAL_CELLS) % TOTAL_CELLS;
 
-		position->add_special(next);
+			position->add_special(next);
+		}
 		computer_play = !computer_play;
 	}
 
@@ -466,7 +469,7 @@ void exec() {
 		special_pos = -1;
 		if (computer_play) value = iterative_deepening(position, move, MAX_DEPTH, computer_play, false, turn);
 		//if (computer_play) value = minMaxValue_right(position, pos_start, -INF, INF, move, iterative_move, computer_play, 0, 8, false, turn);
-		//else if(!computer_play) value = minMaxValue_right(position, pos_start, -INF, INF, move, iterative_move, computer_play, 0, 8, true, turn);
+		else if(!computer_play) value = minMaxValue_left(position, pos_start, -INF, INF, move, iterative_move, computer_play, 0, 8, true, turn);
 		else {
 			//Human plays
 			std::cout << "Play : ";

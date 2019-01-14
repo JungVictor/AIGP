@@ -15,7 +15,7 @@
 
 #define NUMBER_OF_CELLS 6
 #define TOTAL_CELLS 12
-#define MAX_DEPTH 12
+#define MAX_DEPTH 14
 #define SEEDS_PER_HOLE 3
 #define SPECIAL_SEED 2
 #define COMPUTER_START true

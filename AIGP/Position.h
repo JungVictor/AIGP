@@ -146,8 +146,8 @@ public:
 		int points_difference = seeds_computer - seeds_player;
 		int number_of_seeds_difference = 0;
 		int current_number_of_seeds_difference = 0;
+
 		int number_of_playable_case_difference = 0;
-		int number_of_unplayable_cases = 0;
 
 		for (int i = 0; i < NUMBER_OF_CELLS; i++) { 
 			int seed_cpt = total_seeds(i);
@@ -163,11 +163,14 @@ public:
 			if (seed_ply > 0) number_of_playable_case_difference--;
 		}
 		//Stock seeds at beginning
-		if (turn < 10) return number_of_seeds_difference;
+		if (turn <= 10) return number_of_seeds_difference;
 		//If we have much more seed in our side, then we try to starve the opponent
-		else if (current_number_of_seeds_difference > 20) return number_of_seeds_difference * 2 + points_difference;
+		else if (current_number_of_seeds_difference > 10) return number_of_seeds_difference * 2 + points_difference;
 		//Otherwise, we try to capture if it's the end while stocking a bit.
-		return points_difference * (turn / 8) + number_of_seeds_difference;
+		else if (turn < 18) return points_difference + number_of_seeds_difference;
+		else if (turn < 25) return points_difference * 2 + number_of_seeds_difference;
+		else if (turn < 42) return points_difference * 3 + number_of_seeds_difference;
+		return points_difference * 4 + number_of_seeds_difference + number_of_playable_case_difference;
 	}
 	
 	//Evaluate the position (OLD EVALUATION FUNCTION)
